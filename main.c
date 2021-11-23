@@ -9,7 +9,6 @@
 	#define bool int
 
 	FILE* file;
-
 #pragma endregion Declarations
 
 #pragma region Constants
@@ -57,7 +56,9 @@
 
 	//files
 	unsigned char currentFileStatus = FILE_CLOSED;
-
+	
+	//Error handling
+	extern int errno;
 #pragma endregion Universal Variables
 
 #pragma region Functions
@@ -96,6 +97,19 @@
 				getchar();
 				break;
 			}
+		}
+		void swapUnsShort(unsigned short* a, unsigned short* b) {
+			unsigned short temp;
+			temp = *a;
+			*a = *b;
+			*b = temp;
+		}
+		void swapBool(bool* a, bool* b)
+		{
+			bool temp;
+			temp = *a;		
+			*a = *b;
+			*b = temp;
 		}
 	#pragma endregion Misc
 	#pragma region Inputs
