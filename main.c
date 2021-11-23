@@ -4,6 +4,7 @@
 	#include <stdio.h> //basic input output libraries
 	#include <string.h> //string manipulation tools
 	#include <stdlib.h> //file manipulaiton
+	#include <errno.h> //error code handling
 
 	#define bool int
 
@@ -29,7 +30,7 @@
 	#define FALSE 0
 
 	//files
-	#define CSV_FILE_LOCATION "C:\\CarSales2Data.csv" //ORIGINAL: D:\\data.csv
+	#define CSV_FILE_LOCATION "CarSales2Data.csv" //ORIGINAL: D:\\data.csv
 
 	#define FILE_OPENED 0
 	#define FILE_CLOSED 1
@@ -85,7 +86,7 @@
 				break;
 
 			case 3:
-				printf("\nPress enter to return to the main menu.\n>>> ");
+				printf("Press enter to return to the main menu.\n>>> ");
 				getchar();
 				getchar();
 				break;
@@ -238,6 +239,16 @@
 				discountGivenPerSale[fileLineCounter] = (bool)discountGivenPerSaleValue;
 				strcpy(customerNames[fileLineCounter], customerNameValue);
 
+				//Updating total profit (price of car type * how many sold * discount
+				if (discountGivenPerSale[fileLineCounter] == TRUE)
+				{
+					totalProfit = carPrices[typeOfCarSale[fileLineCounter]] * customerCarsSold[fileLineCounter] * (1 - DISCOUNT_PERCENTAGE);
+				}
+				else
+				{
+					totalProfit = carPrices[typeOfCarSale[fileLineCounter]] * customerCarsSold[fileLineCounter];
+				}
+
 				carsAvalible -= carAmountPerSaleValue;
 
 				//increment and iterate
@@ -246,12 +257,17 @@
 
 			//update number of transactions
 			numberOfTransactions = fileLineCounter;
+			
+			printf("\nFile read successfully!");
 		}
 		void getFileData()
 		{
+			printf("Opening data file...");
 			openFile(CSV_FILE_LOCATION, "r");
 
 			if (currentFileStatus == FILE_OPENED) {
+				
+				printf("\nFile found, reading file...");
 				readFile();
 			}
 			else if (currentFileStatus == FILE_ERROR) {
@@ -333,6 +349,7 @@
 			{
 				if (userAge >= DISCOUNT_MIN_AGE && userAge <= DISCOUNT_MAX_AGE)
 				{
+					getchar(); //prevents not being able to see the recipt if true
 					return TRUE; //gives a discount if the user's age falls within a specified value
 				}
 				else
@@ -459,6 +476,7 @@
 				float totalSalesValue = 0; //the counter that tracks the number of transactions
 				int typeOfCar;
 				float price; //Used to show the price of a car after discounts applied. Used instead of getting a car's value from an array
+				int numberOfCarsCounter = 0;
 
 				switch (numberOfTransactions)
 				{
@@ -479,18 +497,23 @@
 							{
 								strcpy(discountGivenAsText, "Yes");
 								price *= (1 - DISCOUNT_PERCENTAGE);
+								totalSales[i] = carPrices[typeOfCar] * customerCarsSold[i] * (1 - DISCOUNT_PERCENTAGE);
 							}
 							else
 							{
 								strcpy(discountGivenAsText, "No");
+								totalSales[i] = carPrices[typeOfCar] * customerCarsSold[i];
 							}
+
+							//Split over two lines for easier mangement
 							printf("%d\t%s\t%s\t%d\t", (i + 1), customerNames[i], carTypes[typeOfCar], customerCarsSold[i]); 
-							printf("%c%.2f\t%c%.2f\t%s\n", 156, totalSales[i], 156, price, discountGivenAsText); //156 displays the £ symbol
+							printf("%c%.2f\t%c%.2f\t%s\n", 156, totalSales[i], 156, carPrices[typeOfCar], discountGivenAsText); //156 displays the £ symbol
 
 							totalSalesValue += totalSales[i]; //sets the number of sales to the current transaction's number
+							numberOfCarsCounter += 1;
 						}
 						printf("\nTotal profit: %c%.2f.", 156, (double)totalProfit);
-						printf("\n%hd cars have been sold, and there are %hd cars remaining.\n", totalNumCarsSold, carsAvalible);
+						printf("\n%hd cars have been sold, and there are %hd cars remaining.\n", numberOfCarsCounter, carsAvalible);
 						waitForInput(3);
 						break;
 				}
