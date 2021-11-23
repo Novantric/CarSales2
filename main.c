@@ -22,6 +22,7 @@
 	//menu options
 	#define MENU_BUY 'a'
 	#define MENU_VIEW 'b'
+	#define MENU_VIEW_2 'c'
 	#define MENU_EXIT 'x'
 
 	//boolean values
@@ -350,8 +351,9 @@
 		char menu_menu()
 		{
 			printf("Please choose what service you'd like!\n");
-			printf("a - Buy a Car\n");
+			printf("a - Buy a Car!\n");
 			printf("b - View Sales Statistics\n");
+			printf("c - View other sales statistics\n");
 			printf("x - Quit the Program\n>>> ");
 			char menuChoice = getchar();
 			return menuChoice;
@@ -359,7 +361,7 @@
 	#pragma endregion Menu
 	#pragma region Menu Options
 		#pragma region Buy
-			unsigned short buy_CheckForDiscount(unsigned short userAge)
+			bool buy_CheckForDiscount(unsigned short userAge)
 			{
 				if (userAge >= DISCOUNT_MIN_AGE && userAge <= DISCOUNT_MAX_AGE)
 				{
@@ -532,6 +534,47 @@
 						break;
 				}
 			}
+			void sortArrays_NoCarsSoldPerSale() {
+
+				for (int i = 0; i < numberOfTransactions - 1; i++) {
+
+					// set up a loop the gives us an index "j" for accessing 
+					//		between the (first immediately after i) and (last) positions that contain values
+					// this loop will execute fully, from start to finish, 
+					//		every time the above for loop begins a new iteration
+					for (int j = i + 1; j < numberOfTransactions; j++) {
+
+						// check if the value at position i is greater than the value at position j
+						if (customerCarsSold[i] > customerCarsSold[j]) {
+
+							// if so, swap those two values in the ticketAmountPerSale array
+							swapUnsShort(&customerCarsSold[i], &customerCarsSold[j]);
+
+							// also swap the two values at those same positions in the typeOfTicketPerSale array
+							swapUnsShort(&typeOfCarSale[i], &typeOfCarSale[j]);
+
+							// and in the discountGivenPerSale array
+							swapBool(&discountGivenPerSale[i], &discountGivenPerSale[j]);
+
+							// and lastly, do the same in the customerNames array
+
+							// using a function to perform this swap would complicate this program a bit too much, but we 
+							//		can do the swap directly here quite easily
+							char temp[201];
+							// copy string from position i to the newly created temp variable
+							strcpy(temp, customerNames[i]);
+							// copy string from position j into position i
+							strcpy(customerNames[i], customerNames[j]);
+							// copy string from temp into position j
+							strcpy(customerNames[j], temp);
+
+						} // end of "if" statement
+
+					} // end of second "for" loop
+
+				} // end of first "for" loop
+
+			}
 		#pragma endregion Records
 	#pragma endregion Menu Options	
 	
@@ -557,6 +600,9 @@ void main()
 				break;
 			case MENU_VIEW:
 				menuChoice_ViewRecords();
+				break;
+			case MENU_VIEW_2:
+				//add advanced stats here
 				break;
 			case MENU_EXIT:
 				saveFile();
