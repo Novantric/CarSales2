@@ -5,6 +5,7 @@
 	#include <string.h> //string manipulation tools
 	#include <stdlib.h> //file manipulaiton
 	#include <errno.h> //error code handling
+#include "main.h"
 
 	#define bool int
 
@@ -35,6 +36,16 @@
 	#define FILE_OPENED 0
 	#define FILE_CLOSED 1
 	#define FILE_ERROR 2
+
+	//colours!
+	#define NORMAL  "\x1B[0m"
+	#define RED  "\x1B[31m"
+	#define GREEN  "\x1B[32m"
+	#define YELLOW  "\x1B[33m"
+	#define BLUE  "\x1B[34m"
+	#define MAGENTA  "\x1B[35m"
+	#define CYAN  "\x1B[36m"
+	#define WHITE  "\x1B[37m"
 #pragma endregion Universal Constants
 
 #pragma region Variables
@@ -42,7 +53,7 @@
 	int numberOfTransactions = 0; //INDEX
 
 	float totalSales[MAX_SALES]; //holds value of each transaction
-	int customerCarsSold[MAX_SALES]; //the number of cars a user buys
+	int numCarsSold[MAX_SALES]; //the number of cars a user buys
 	unsigned short discountGivenPerSale[MAX_SALES]; //tracks if a discount was given
 	char customerNames[MAX_SALES][101]; //stores customer names up to 100 chars long
 	unsigned short typeOfCarSale[MAX_SALES]; //tracks the type of car sold per sale
@@ -74,6 +85,7 @@
 			//2 = two getChars; MENU
 			//3 = menu; return to
 			//4 = menu; exit
+			char ch;
 
 			switch (userChoice)
 			{
@@ -83,13 +95,11 @@
 				break;
 			case 2:
 				printf("\n>>> ");
-				getchar();
-				getchar();
+				scanf("%c", &ch);
 				break;
 
 			case 3:
 				printf("Press enter to return to the main menu.\n>>> ");
-				getchar();
 				getchar();
 				break;
 			case 4:
@@ -111,6 +121,36 @@
 			temp = *a;		
 			*a = *b;
 			*b = temp;
+		}
+		void setColour(char colour)
+		{
+			switch (colour)
+			{
+				case '0':
+					printf("%s", NORMAL);
+					break;
+				case 'r':
+					printf("%s", RED);
+					break;
+				case 'm':
+					printf("%s", MAGENTA);
+					break;
+				case 'y':
+					printf("%s", YELLOW);
+					break;
+				case 'g':
+					printf("%s", GREEN);
+					break;
+				case 'b':
+					printf("%s", BLUE);
+					break;
+				case 'c':
+					printf("%s", CYAN);
+					break;
+				case 'w':
+					printf("%s", WHITE);
+					break;
+			}
 		}
 	#pragma endregion Misc
 	#pragma region Inputs
@@ -203,6 +243,9 @@
 				if (createFile(fileName) == NULL)
 				{
 					currentFileStatus = FILE_ERROR;
+					setColour('r');
+					printf("Error opening %s: %s", fileName, strerror(errno));
+					setColour('0');
 				}
 				else
 				{
@@ -240,7 +283,7 @@
 					&typeOfCarPerSaleValue,
 					&discountGivenPerSaleValue,
 					&customerNameValue
-				);
+					);
 
 				//when the file ends
 				if (scanResult == EOF) 
@@ -249,7 +292,7 @@
 				}
 
 				//save the read data into the correct arrays
-				customerCarsSold[fileLineCounter] = carAmountPerSaleValue;
+				numCarsSold[fileLineCounter] = carAmountPerSaleValue;
 				typeOfCarSale[fileLineCounter] = typeOfCarPerSaleValue;
 				discountGivenPerSale[fileLineCounter] = (bool)discountGivenPerSaleValue;
 				strcpy(customerNames[fileLineCounter], customerNameValue);
@@ -257,14 +300,14 @@
 				//Updating total profit (price of car type * how many sold * discount
 				if (discountGivenPerSale[fileLineCounter] == TRUE)
 				{
-					totalProfit = carPrices[typeOfCarSale[fileLineCounter]] * customerCarsSold[fileLineCounter] * (1 - DISCOUNT_PERCENTAGE);
+					totalProfit += carPrices[typeOfCarSale[fileLineCounter]] * numCarsSold[fileLineCounter] * (1 - DISCOUNT_PERCENTAGE);
 				}
 				else
 				{
-					totalProfit = carPrices[typeOfCarSale[fileLineCounter]] * customerCarsSold[fileLineCounter];
+					totalProfit += carPrices[typeOfCarSale[fileLineCounter]] * numCarsSold[fileLineCounter];
 				}
 
-				carsAvalible -= carAmountPerSaleValue;
+				carsAvalible -= numCarsSold[fileLineCounter];
 
 				//increment and iterate
 				fileLineCounter++;
@@ -285,8 +328,11 @@
 				printf("\nFile found, reading file...");
 				readFile();
 			}
-			else if (currentFileStatus == FILE_ERROR) {
+			else if (currentFileStatus == FILE_ERROR)
+			{
+				setColour('r');
 				printf("There was an error trying to open the file at: %s\nIf you're seeing this, this file likely doesn't exist yet.", CSV_FILE_LOCATION);
+				setColour('0');
 				waitForInput(1);
 			}
 			closeFile();
@@ -302,7 +348,7 @@
 				char data[50]; //temporary, changed for each variable
 
 				//number of cars sold
-				_itoa((int)customerCarsSold[i], data, 10); //convert from deanary to string, add to data				
+				_itoa((int)numCarsSold[i], data, 10); //convert from deanary to string, add to data				
 				strcpy(line, data); //copy to the line
 				strcat(line, ","); //seperate vars on the line
 
@@ -335,14 +381,108 @@
 			if (currentFileStatus == FILE_OPENED) {
 				writeDataToFile();
 			}
-			else if (currentFileStatus == FILE_ERROR) {
+			else if (currentFileStatus == FILE_ERROR)
+			{
+				setColour('r');
 				printf("There was an error when writing to the file at: %s\n", CSV_FILE_LOCATION);
-				//waitForInput(1); (not needed because of the exit message in main)
+				setColour('0');
 			}
-
 			closeFile();
 		}
 	#pragma endregion Files
+	#pragma region Sorting Arrays
+		void sortArrays_NoCarsSoldPerSale() {
+			//perform a bubble sort
+			for (int i = 0; i < numberOfTransactions - 1; i++) {
+				for (int j = i + 1; j < numberOfTransactions; j++) {
+
+					// check if the value at position i is greater than the value at position j
+					if (numCarsSold[i] > numCarsSold[j]) {
+
+						//swap if true, ticketAmountPerSale
+						swapUnsShort(&numCarsSold[i], &numCarsSold[j]);
+
+						//swap typeOfTicketPerSale
+						swapUnsShort(&typeOfCarSale[i], &typeOfCarSale[j]);
+
+						//swap discountGivenPerSale 
+						swapBool(&discountGivenPerSale[i], &discountGivenPerSale[j]);
+
+						//swap customerNames
+						char temp[201];
+						strcpy(temp, customerNames[i]);
+						strcpy(customerNames[i], customerNames[j]);
+						strcpy(customerNames[j], temp);
+
+					}
+				}
+			}
+		}
+		void sortArrays_PrintAtPos(int position)
+		{
+			int typeOfCar = typeOfCarSale[position];
+			float price = numCarsSold[position] * carPrices[typeOfCar];
+			char discountGivenText[4]; //allows to print if a disount was given as text
+
+			// if a discount was given, then...
+			if (discountGivenPerSale[position] == TRUE) {
+				strcpy(discountGivenText, "Yes");
+				price *= (1 - DISCOUNT_PERCENTAGE);
+			}
+			else
+			{
+				strcpy(discountGivenText, "No");
+			}
+
+			printf("%d\t%s\t\t%s\t\t%d\t", position + 1, customerNames[position], carTypes[typeOfCar], numCarsSold[position]);
+			printf("%c%.2f\t%c%.2f\t", 156, price, 156, carPrices[typeOfCar], discountGivenText); //Matching format as rest of program
+
+			if (discountGivenPerSale[position] == TRUE)
+			{
+				setColour('g');
+				printf("%s\n", discountGivenText);
+			}
+			else
+			{
+				setColour('r');
+				printf("%s\n", discountGivenText);
+			}
+			setColour('0');
+
+		}
+		void sortArrays_PrintHeadings()
+		{
+			setColour('c');
+			printf("ID\tName\t\tCar Type\t#Cars\tCost\t\tCost/Car\tDiscount?\n");
+			setColour('0');
+		}
+		void sortArrays_BetweenMinMax(unsigned short min, unsigned short max) {
+			bool foundValue = FALSE;
+
+			for (int i = 0; i < numberOfTransactions; i++) {
+
+				if (min <= numCarsSold[i] && numCarsSold[i] <= max)
+				{
+					//only prints headings if no prior results have been found
+					if (foundValue == FALSE) 
+					{
+						setColour('c');
+						printf("\nShowing data in the range %hd - %hd:\n", min, max);
+						setColour('0');
+						sortArrays_PrintHeadings();
+					}
+					sortArrays_PrintAtPos(i);
+					foundValue = TRUE;
+				}
+			}
+			if (foundValue == FALSE)
+			{
+				setColour('r');
+				printf("No data was found.\n");
+				setColour('0');
+			}
+		}
+	#pragma endregion Sorting Arrays
 	#pragma region Menu
 		void menu_greeting()
 		{
@@ -350,12 +490,17 @@
 		}
 		char menu_menu()
 		{
+			setColour('y');
 			printf("Please choose what service you'd like!\n");
+			setColour('0');
+
 			printf("a - Buy a Car!\n");
 			printf("b - View Sales Statistics\n");
-			printf("c - View other sales statistics\n");
+			printf("c - View sales data in a specified range\n");
 			printf("x - Quit the Program\n>>> ");
+
 			char menuChoice = getchar();
+			clearScreen();
 			return menuChoice;
 		}
 	#pragma endregion Menu
@@ -405,20 +550,26 @@
 			}
 			void buy_Recipt(float finalPrice, unsigned short numCarsBrought, unsigned short discountGiven)
 			{
+				setColour('g');
 				printf("~~~~~~~~~~~Thank you for your business!~~~~~~~~~~~\n");
+				setColour('0');
 				printf("The final sum is %c%.2f", 156, finalPrice);
 				buy_PrintDiscount(discountGiven);
 				printf("\nThere are %hd remaining Cars that can be purchased.", carsAvalible);
 				printf("\nHave a good day, my good man. Please come again.");
-				printf("\n\nYou obtained %hd Cars!!", numCarsBrought);
+				setColour('b');
+				printf("\n\nYou obtained %hd Cars!!\n", numCarsBrought);
+				setColour('0');
 
-				waitForInput(1);
+				waitForInput(3);
 				clearScreen();
 			}
 			void buy_showCarTypes()
 			{
 				printf("Car Types:\n");
+				setColour('c');
 				printf("ID\tName\tPrice\n");
+				setColour('0');
 				for (int i = 0; i < numberOfCarsInStock; i++)
 				{
 					printf("%d\t%s\t%c%.2f\n", i, carTypes[i], 156, carPrices[i]);
@@ -433,11 +584,13 @@
 				unsigned char hasNUSCard = 0;
 
 				//check if cars are availible
-				if (carsAvalible == 0)
+				if (carsAvalible <= 0 )
 				{
-					printf("Sorry, but we're all sold out! Please come again!");
-					waitForInput(2);
-					clearScreen();
+					setColour('r');
+					printf("Sorry, but we're all sold out! Please come again!\n");
+					setColour('0');
+					getchar();
+					waitForInput(3);
 					return; //sends you back to the menu
 				}
 
@@ -451,9 +604,13 @@
 				numCarsBrought = carTemp;
 
 				//Enough Cars?
-				if (carsAvalible < numCarsBrought) {
-					printf("Sorry, but we don't have enough of the cars you requested. Please come again!\n>>> ");
-					clearScreen();
+				if (carsAvalible < numCarsBrought)
+				{
+					setColour('r');
+					printf("Sorry, but we don't have enough of the cars you requested. Please come again!\n");
+					setColour('0');
+					getchar();
+					waitForInput(3);
 					return;
 				}
 
@@ -479,7 +636,7 @@
 				totalProfit += finalSumPrice; //tracks the profit earnt
 				totalNumCarsSold += numCarsBrought; //tracks the amount of cars sold
 				totalSales[numberOfTransactions] = finalSumPrice; //tracks the money spent by this user
-				customerCarsSold[numberOfTransactions] = numCarsBrought; //tracks how many cars this user brought
+				numCarsSold[numberOfTransactions] = numCarsBrought; //tracks how many cars this user brought
 				numberOfTransactions++; //tracks the number of transactions
 
 				//Finish
@@ -487,93 +644,40 @@
 			}
 		#pragma endregion Buy
 		#pragma region Records
-			void menuChoice_ViewRecords()
+			void menuChoice_viewSalesData()
 			{
-				float totalSalesValue = 0; //the counter that tracks the number of transactions
-				int typeOfCar;
-				float price; //Used to show the price of a car after discounts applied. Used instead of getting a car's value from an array
-				int numberOfCarsCounter = 0;
+				sortArrays_NoCarsSoldPerSale();
 
-				switch (numberOfTransactions)
-				{
-					case 0:
-						printf("There have been no cars sold.");
-						waitForInput(3);
-						return;
-						break;
-					default:
-						printf("ID\tName\tType\t#Cars\tCost\t\tCost/Car\tDiscount?\n");
-						for (int i = 0; i < numberOfTransactions; i++) //loops through the number of sales
-						{
-							typeOfCar = typeOfCarSale[i];
-							price = typeOfCarSale[i] * carPrices[typeOfCar]; //the price of an induvidual car
+				//tracks the number of cars sold
+				unsigned int numberOfCarsCounter = 0;
 
-							char discountGivenAsText[4];
-							if (discountGivenPerSale[i] == TRUE)
-							{
-								strcpy(discountGivenAsText, "Yes");
-								price *= (1 - DISCOUNT_PERCENTAGE);
-								totalSales[i] = carPrices[typeOfCar] * customerCarsSold[i] * (1 - DISCOUNT_PERCENTAGE);
-							}
-							else
-							{
-								strcpy(discountGivenAsText, "No");
-								totalSales[i] = carPrices[typeOfCar] * customerCarsSold[i];
-							}
+				sortArrays_PrintHeadings();
+				for (int i = 0; i < numberOfTransactions; i++) {
+					int typeOfTicket = typeOfCarSale[i];
+					float price = numCarsSold[i] * carPrices[typeOfTicket];
+					sortArrays_PrintAtPos(i);
 
-							//Split over two lines for easier mangement
-							printf("%d\t%s\t%s\t%d\t", (i + 1), customerNames[i], carTypes[typeOfCar], customerCarsSold[i]); 
-							printf("%c%.2f\t%c%.2f\t%s\n", 156, totalSales[i], 156, carPrices[typeOfCar], discountGivenAsText); //156 displays the £ symbol
-
-							totalSalesValue += totalSales[i]; //sets the number of sales to the current transaction's number
-							numberOfCarsCounter += 1;
-						}
-						printf("\nTotal profit: %c%.2f.", 156, (double)totalProfit);
-						printf("\n%hd cars have been sold, and there are %hd cars remaining.\n", numberOfCarsCounter, carsAvalible);
-						waitForInput(3);
-						break;
+					numberOfCarsCounter += numCarsSold[i]; //track number of cars sold
 				}
+
+				printf("\nTotal profit: %c%.2f.", 156, (double)totalProfit);
+				printf("\n%hd cars have been sold, and there are %hd cars remaining.\n", numberOfCarsCounter, carsAvalible);
+				
+				getchar();
+				waitForInput(3);
 			}
-			void sortArrays_NoCarsSoldPerSale() {
+			void menuChoice_viewSalesBetween()
+			{
+				sortArrays_NoCarsSoldPerSale();
 
-				for (int i = 0; i < numberOfTransactions - 1; i++) {
+				printf("Please enter the desired number of cars sold to filter by.\n");
+				unsigned short minTicketsSold = getUnsShortInput("Minimum:");
+				unsigned short maxTicketsSold = getUnsShortInput("Maximum:");
+				sortArrays_BetweenMinMax(minTicketsSold, maxTicketsSold);
 
-					// set up a loop the gives us an index "j" for accessing 
-					//		between the (first immediately after i) and (last) positions that contain values
-					// this loop will execute fully, from start to finish, 
-					//		every time the above for loop begins a new iteration
-					for (int j = i + 1; j < numberOfTransactions; j++) {
-
-						// check if the value at position i is greater than the value at position j
-						if (customerCarsSold[i] > customerCarsSold[j]) {
-
-							// if so, swap those two values in the ticketAmountPerSale array
-							swapUnsShort(&customerCarsSold[i], &customerCarsSold[j]);
-
-							// also swap the two values at those same positions in the typeOfTicketPerSale array
-							swapUnsShort(&typeOfCarSale[i], &typeOfCarSale[j]);
-
-							// and in the discountGivenPerSale array
-							swapBool(&discountGivenPerSale[i], &discountGivenPerSale[j]);
-
-							// and lastly, do the same in the customerNames array
-
-							// using a function to perform this swap would complicate this program a bit too much, but we 
-							//		can do the swap directly here quite easily
-							char temp[201];
-							// copy string from position i to the newly created temp variable
-							strcpy(temp, customerNames[i]);
-							// copy string from position j into position i
-							strcpy(customerNames[i], customerNames[j]);
-							// copy string from temp into position j
-							strcpy(customerNames[j], temp);
-
-						} // end of "if" statement
-
-					} // end of second "for" loop
-
-				} // end of first "for" loop
-
+				getchar();
+				printf("\n");
+				waitForInput(3);
 			}
 		#pragma endregion Records
 	#pragma endregion Menu Options	
@@ -585,12 +689,11 @@ void main()
 	char menuChoice = 0;
 
 	getFileData();
-	menu_greeting();
+	menu_greeting(); //gets hidden by something
 	do
 	{
 		clearScreen();
 		menuChoice = menu_menu();
-		clearScreen();
 
 		//Menu Options
 		switch (menuChoice)
@@ -599,17 +702,20 @@ void main()
 				menuChoice_BuyTickets();
 				break;
 			case MENU_VIEW:
-				menuChoice_ViewRecords();
+				menuChoice_viewSalesData();
 				break;
 			case MENU_VIEW_2:
-				//add advanced stats here
+				menuChoice_viewSalesBetween();
 				break;
 			case MENU_EXIT:
 				saveFile();
 				waitForInput(4);
 				break;
 			default:
+				setColour('r');
+				getchar();
 				waitForInput(3);
+				setColour('0');
 				break;
 		}
 	} while (menuChoice != MENU_EXIT);
