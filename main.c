@@ -5,9 +5,10 @@
 	#include <string.h> //string manipulation tools
 	#include <stdlib.h> //file manipulaiton
 	#include <errno.h> //error code handling
-#include "main.h"
+	#include "main.h" //added automatically for some reason
+	#include <ctype.h> //checking if numbers are in a string
 
-	#define bool int
+	#define bool unsigned short //to save on memory rather than being an int, increases compatability/reduces warnings
 
 	FILE* file;
 #pragma endregion Declarations
@@ -23,7 +24,6 @@
 	//menu options
 	#define MENU_BUY 'a'
 	#define MENU_VIEW 'b'
-	#define MENU_VIEW_2 'c'
 	#define MENU_EXIT 'x'
 
 	//boolean values
@@ -53,13 +53,13 @@
 	int numberOfTransactions = 0; //INDEX
 
 	float totalSales[MAX_SALES]; //holds value of each transaction
-	int numCarsSold[MAX_SALES]; //the number of cars a user buys
+	unsigned short numCarsSold[MAX_SALES]; //the number of cars a user buys
 	unsigned short discountGivenPerSale[MAX_SALES]; //tracks if a discount was given
 	char customerNames[MAX_SALES][101]; //stores customer names up to 100 chars long
 	unsigned short typeOfCarSale[MAX_SALES]; //tracks the type of car sold per sale
 
-	float carPrices[] = { 5999.99f, 10000.0f, 15999.99f }; //price of each car
-	char carTypes[][10] = { "Ford", "Fiat", "Subaru" }; //name of each car
+	float carPrices[] = { 5999.99f, 10000.0f, 15999.99f, 65000.50 }; //price of each car
+	char carTypes[][10] = { "Ford", "Fiat", "Subaru", "Mazda" }; //name of each car
 
 	//The following keep track of basic metrics that aren't covered by arrays
 	unsigned short carsAvalible = 20, totalNumCarsSold = 0;
@@ -84,32 +84,36 @@
 			//1 = one getChar; BUY, file operation errors
 			//2 = two getChars; MENU
 			//3 = menu; return to
-			//4 = menu; exit
-			char ch;
+			//4 = records menu; return to
+			//5 = menu; exit
 
 			switch (userChoice)
 			{
 			case 1:
 				printf("\n>>> ");
-				getchar();
+				(void)getchar();
 				break;
 			case 2:
 				printf("\n>>> ");
-				scanf("%c", &ch);
+				(void)getchar();
+				(void)getchar();
 				break;
-
 			case 3:
 				printf("Press enter to return to the main menu.\n>>> ");
-				getchar();
+				(void)getchar();
 				break;
 			case 4:
-				printf("Press enter to quit the program.\n>>> ");
-				getchar();
-				getchar();
+				printf("Press enter to return to the records menu.\n>>> ");
+				(void)getchar();
+				break;
+			case 5:
+				printf("Thanks for using the program!\nPress enter to quit.\n>>> ");
+				(void)getchar();
 				break;
 			}
 		}
-		void swapUnsShort(unsigned short* a, unsigned short* b) {
+		void swapUnsShort(unsigned short* a, unsigned short* b)
+		{
 			unsigned short temp;
 			temp = *a;
 			*a = *b;
@@ -152,6 +156,18 @@
 					break;
 			}
 		}
+		bool hasNumbersOnly(const char* s)
+		{
+			//Source: https://stackoverflow.com/questions/14422775/how-to-check-a-given-string-contains-only-number-or-not-in-c
+			while (*s) {
+				if (isdigit(*s++) == 0) return FALSE;
+			}
+			return TRUE;
+		}
+		void printNewLine()
+		{
+			printf("\n");
+		}
 	#pragma endregion Misc
 	#pragma region Inputs
 			char getCharInput(char message[201])
@@ -160,11 +176,11 @@
 				char userInputStr[201];
 				int userInputStrLen;
 
-				printf("%s\n", message);
+				printf("%s\n>>> ", message);
 				do
 				{
 					fgets(userInputStr, sizeof(userInputStr), stdin);
-					userInputStrLen = strlen(userInputStr) - 1;
+					userInputStrLen = (int)(strlen(userInputStr) - (size_t)1);
 
 					if (userInputStr[0] != '\n' && userInputStrLen != 0)
 					{
@@ -173,46 +189,71 @@
 					}
 					else
 					{
-						printf(">>> ");
+						printf("\n>>> ");
 					}
 				} while (1);
-			}
-			unsigned short getUnsShortInput(char message[201])
+			}	
+			unsigned short getUnsShortInput(char message[201], unsigned short maxValue, unsigned short minValue)
 			{
-				unsigned short userInput;
-				int noOfValues;
+				char checkString[201];
+				unsigned short checkShort;
 
 				printf("%s\n>>> ", message);
 				do
 				{
-					noOfValues = scanf("%hd", &userInput);
-					
-
-					if (noOfValues != 0)
+					(void)scanf("%s", checkString);
+					if (hasNumbersOnly(checkString) == TRUE)
 					{
-						return userInput;
+						checkShort = (unsigned short)(atoi(checkString));
+
+						if (checkShort > maxValue)
+						{
+							printf("Please enter a value lower than or equal to ");
+							setColour('r');
+							printf("%hd", maxValue);
+							setColour('0');
+							printf(".\n>>> ");
+						}
+						else if (checkShort < minValue)
+						{
+							printf("Please enter a value greater than or equal to ");
+							setColour('r');
+							printf("%hd", minValue);
+							setColour('0');
+							printf(".\n>>> ");
+						}
+						else
+						{
+							return checkShort;
+						}
 					}
 					else
 					{
-						printf(">>> ");
+						printf("Please enter a valid number.\n>>> ");
 					}
-
-				} while (1);
-
+				} while (TRUE);
 			}
 			void getStringInput(char message[201], char *userInput)
 			{
 				int strLen;
 
-				printf("%s\n", message);
+				printf("%s\n>>> ", message);
 				do
 				{
 					fgets(userInput, sizeof(userInput), stdin);
 					if (userInput[0] != '\n')
 					{
-						strLen = strlen(userInput) - 1;
-						userInput[strLen] = '\0'; //sets the last char as null instead of \n
-						break;
+						//start of input validation
+						if ((strstr(userInput, "string") != NULL))
+						{
+							printf("Please enter a valid name.\n>>> ");
+						}
+						else
+						{
+							strLen = (int)(strlen(userInput) - (size_t)1); //prevents warning about not converting from int to size_t
+							userInput[strLen] = '\0'; //sets the last char as null instead of \n
+							break;
+						}	
 					}
 					else
 					{
@@ -435,7 +476,7 @@
 			}
 
 			printf("%d\t%s\t\t%s\t\t%d\t", position + 1, customerNames[position], carTypes[typeOfCar], numCarsSold[position]);
-			printf("%c%.2f\t%c%.2f\t", 156, price, 156, carPrices[typeOfCar], discountGivenText); //Matching format as rest of program
+			printf("%c%.2f\t%c%.2f\t", 156, price, 156, carPrices[typeOfCar]); //Matching format as rest of program
 
 			if (discountGivenPerSale[position] == TRUE)
 			{
@@ -448,7 +489,6 @@
 				printf("%s\n", discountGivenText);
 			}
 			setColour('0');
-
 		}
 		void sortArrays_PrintHeadings()
 		{
@@ -481,41 +521,51 @@
 				printf("No data was found.\n");
 				setColour('0');
 			}
+			printNewLine();
+		}
+		void sortArrays_LookForFirstChar(char searchChar)
+		{
+			bool foundValue = FALSE;
+
+			for (int i = 0; i < numberOfTransactions; i++)
+			{
+
+				if (customerNames[i][0] == searchChar)
+				{
+					//only prints headings if no prior results have been found
+					if (foundValue == FALSE)
+					{
+						setColour('c');
+						printf("\nShowing matching data:\n");
+						setColour('0');
+						sortArrays_PrintHeadings();
+					}
+					sortArrays_PrintAtPos(i);
+					foundValue = TRUE;
+				}
+			}
+			if (foundValue == FALSE)
+			{
+				setColour('r');
+				printf("No data was found.\n");
+				setColour('0');
+			}
+			printNewLine();
 		}
 	#pragma endregion Sorting Arrays
-	#pragma region Menu
-		void menu_greeting()
-		{
-			printf("Welcome to Noven's used Car Emporium!\n");
-		}
-		char menu_menu()
-		{
-			setColour('y');
-			printf("Please choose what service you'd like!\n");
-			setColour('0');
-
-			printf("a - Buy a Car!\n");
-			printf("b - View Sales Statistics\n");
-			printf("c - View sales data in a specified range\n");
-			printf("x - Quit the Program\n>>> ");
-
-			char menuChoice = getchar();
-			clearScreen();
-			return menuChoice;
-		}
-	#pragma endregion Menu
 	#pragma region Menu Options
 		#pragma region Buy
 			bool buy_CheckForDiscount(unsigned short userAge)
 			{
 				if (userAge >= DISCOUNT_MIN_AGE && userAge <= DISCOUNT_MAX_AGE)
 				{
-					getchar(); //prevents not being able to see the recipt if true
+					(void)getchar(); //prevents not being able to see the recipt if true
 					return TRUE; //gives a discount if the user's age falls within a specified value
 				}
 				else
 				{
 					char hasNUSCard;
+					(void)getchar();
 					do
 					{
 						hasNUSCard = getCharInput("Do you own a NUS card? y/n"); //can only have one discount
@@ -526,6 +576,10 @@
 						else if (hasNUSCard == 'n' || hasNUSCard == 'N')
 						{
 							return FALSE;
+						}
+						else
+						{
+							printf("Please enter a valid value.\n");
 						}
 					} while (1);					
 				}
@@ -574,6 +628,16 @@
 				{
 					printf("%d\t%s\t%c%.2f\n", i, carTypes[i], 156, carPrices[i]);
 				}
+
+			}
+			unsigned short buy_returnNumberCarTypes()
+			{
+				unsigned short carCounter = 0;
+				for (int i = 0; i < numberOfCarsInStock; i++)
+				{
+					carCounter += 1;
+				}
+				return carCounter - 1; //first ID is always 0
 			}
 			void menuChoice_BuyTickets()
 			{
@@ -589,39 +653,43 @@
 					setColour('r');
 					printf("Sorry, but we're all sold out! Please come again!\n");
 					setColour('0');
-					getchar();
+					//(void)getchar();
 					waitForInput(3);
 					return; //sends you back to the menu
 				}
 
 				//Name and cars needed
 				getStringInput("What is your Name?", &customerNames[numberOfTransactions]);
-				//printf("What is your Name?\n>>> ");
-				//scanf("\n%[^\n]s", &customerNames[numberOfTransactions]);
-
-				unsigned short carTemp = 0;
-				carTemp = getUnsShortInput("How many car(s) would you like, good sir?");
-				numCarsBrought = carTemp;
 
 				//Enough Cars?
-				if (carsAvalible < numCarsBrought)
+				printf("There are ");
+				setColour('r');
+				printf("%hd", carsAvalible);
+				setColour('0');
+				printf(" cars currently availble.\n");
+
+				unsigned short carTemp = 0;
+				carTemp = getUnsShortInput("Please enter how many you would like to purchase.\nAlternatively, enter 0 to return to the main menu.", carsAvalible, 0);
+
+				if (carTemp == 0)
 				{
-					setColour('r');
-					printf("Sorry, but we don't have enough of the cars you requested. Please come again!\n");
-					setColour('0');
-					getchar();
-					waitForInput(3);
+					(void)getchar(); //catches the newline character so it isnt passed into the menu
 					return;
+				}
+				else
+				{
+					numCarsBrought = carTemp;
 				}
 
 				//Car Wanted
 				buy_showCarTypes();
-				carType = getUnsShortInput("Please choose an option from the list above");
+				unsigned short numCarsCounted = buy_returnNumberCarTypes();
+				carType = getUnsShortInput("Please enter an ID from the list above!", numCarsCounted, 0);
 
 				//Discount and price
 				finalSumPrice = numCarsBrought * carPrices[carType]; //calculate the price
 
-				userAge = getUnsShortInput("How old are you?");
+				userAge = getUnsShortInput("How old are you?", 130, 10);
 				discountGiven = buy_CheckForDiscount(userAge);
 
 				if (discountGiven == TRUE)
@@ -663,25 +731,92 @@
 				printf("\nTotal profit: %c%.2f.", 156, (double)totalProfit);
 				printf("\n%hd cars have been sold, and there are %hd cars remaining.\n", numberOfCarsCounter, carsAvalible);
 				
-				getchar();
-				waitForInput(3);
+				waitForInput(4);
 			}
 			void menuChoice_viewSalesBetween()
 			{
 				sortArrays_NoCarsSoldPerSale();
 
 				printf("Please enter the desired number of cars sold to filter by.\n");
-				unsigned short minTicketsSold = getUnsShortInput("Minimum:");
-				unsigned short maxTicketsSold = getUnsShortInput("Maximum:");
+				unsigned short minTicketsSold = getUnsShortInput("Minimum:", numberOfCarsInStock - 1, 0);
+				unsigned short maxTicketsSold = getUnsShortInput("Maximum: (Enter 0 for no limit)", numberOfCarsInStock, 0);
+				if (maxTicketsSold == 0)
+				{
+					maxTicketsSold = 65535; //max value an unsigned short can take without overflowing
+				}
 				sortArrays_BetweenMinMax(minTicketsSold, maxTicketsSold);
-
-				getchar();
-				printf("\n");
-				waitForInput(3);
+				waitForInput(4);
+				(void)getchar();
+			}
+			void menuChoice_viewSalesNames()
+			{
+				char filterChar = getCharInput("Please enter the first letter that you want to filter by.");
+				sortArrays_LookForFirstChar(filterChar);
+				waitForInput(4);
 			}
 		#pragma endregion Records
 	#pragma endregion Menu Options	
-	
+	#pragma region Menu
+			void menu_greeting()
+			{
+				printf("Welcome to Noven's used Car Emporium!\n");
+			}
+			char menu_menu()
+			{
+				setColour('y');
+				printf("Please choose what service you'd like!\n");
+				setColour('0');
+
+				printf("a - Buy a Car!\n");
+				printf("b - View Sales Statistics\n");
+				printf("x - Quit the Program");
+
+				char menuChoice = getCharInput("\0");
+				clearScreen();
+				return menuChoice;
+			}
+			void menu_records()
+			{
+				bool loop = TRUE;
+				char recordsChoice;
+				do
+				{
+					clearScreen();
+
+					setColour('y');
+					printf("How would you like to view the data?\n");
+					setColour('0');
+					printf("a - View all data\n");
+					printf("b - Sort by number of cars sold\n");
+					printf("c - Sort by name of customer\n");
+					printf("x - Return to the main menu");
+
+					recordsChoice = getCharInput("\0");
+					clearScreen();
+
+					switch (recordsChoice)
+					{
+					case 'a':
+						menuChoice_viewSalesData();
+						break;
+					case 'b':
+						menuChoice_viewSalesBetween();
+						break;
+					case 'c':
+						menuChoice_viewSalesNames();
+						break;
+					case 'x':
+						loop = FALSE;
+						break;
+					default:
+						setColour('r');
+						waitForInput(3);
+						setColour('0');
+						break;
+					}
+				} while (loop == TRUE);
+			}
+	#pragma endregion Menu
 #pragma endregion Functions
 
 void main()
@@ -702,18 +837,14 @@ void main()
 				menuChoice_BuyTickets();
 				break;
 			case MENU_VIEW:
-				menuChoice_viewSalesData();
-				break;
-			case MENU_VIEW_2:
-				menuChoice_viewSalesBetween();
+				menu_records();
 				break;
 			case MENU_EXIT:
 				saveFile();
-				waitForInput(4);
+				waitForInput(5);
 				break;
 			default:
 				setColour('r');
-				getchar();
 				waitForInput(3);
 				setColour('0');
 				break;
