@@ -719,18 +719,27 @@
 				//tracks the number of cars sold
 				unsigned int numberOfCarsCounter = 0;
 
-				sortArrays_PrintHeadings();
-				for (int i = 0; i < numberOfTransactions; i++) {
-					int typeOfTicket = typeOfCarSale[i];
-					float price = numCarsSold[i] * carPrices[typeOfTicket];
-					sortArrays_PrintAtPos(i);
-
-					numberOfCarsCounter += numCarsSold[i]; //track number of cars sold
+				if (numberOfTransactions == 0)
+				{
+					setColour('r');
+					printf("No data was found.\n");
+					setColour('0');
 				}
+				else
+				{
+					sortArrays_PrintHeadings();
+					for (int i = 0; i < numberOfTransactions; i++)
+					{
+						int typeOfTicket = typeOfCarSale[i];
+						float price = numCarsSold[i] * carPrices[typeOfTicket];
+						sortArrays_PrintAtPos(i);
 
-				printf("\nTotal profit: %c%.2f.", 156, (double)totalProfit);
-				printf("\n%hd cars have been sold, and there are %hd cars remaining.\n", numberOfCarsCounter, carsAvalible);
-				
+						numberOfCarsCounter += numCarsSold[i]; //track number of cars sold
+					}
+
+					printf("\nTotal profit: %c%.2f.", 156, (double)totalProfit);
+					printf("\n%hd cars have been sold, and there are %hd cars remaining.\n", numberOfCarsCounter, carsAvalible);
+				}
 				waitForInput(4);
 			}
 			void menuChoice_viewSalesBetween()
